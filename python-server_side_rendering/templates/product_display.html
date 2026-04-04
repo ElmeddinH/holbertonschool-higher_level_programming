@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products - My Portfolio</title>
+    <style>
+        table { border-collapse: collapse; width: 80%; margin: 20px auto; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .error { color: red; text-align: center; }
+    </style>
+</head>
+<body>
+    {% include 'header.html' %}
+    <main>
+        <h1>Product List</h1>
+        {% if error %}
+        <p class="error">{{ error }}</p>
+        {% else %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.id if product.id is defined else product['id'] }}</td>
+                    <td>{{ product.name if product.name is defined else product['name'] }}</td>
+                    <td>{{ product.category if product.category is defined else product['category'] }}</td>
+                    <td>{{ product.price if product.price is defined else product['price'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </main>
+    {% include 'footer.html' %}
+</body>
+</html>
