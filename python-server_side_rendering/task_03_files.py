@@ -41,6 +41,7 @@ def items():
 def products():
     """Render products from JSON or CSV based on query parameter."""
     source = request.args.get("source")
+    product_id = request.args.get("id")
     error = None
     product_list = []
 
@@ -58,7 +59,18 @@ def products():
         except FileNotFoundError:
             error = "Error reading CSV file."
     else:
-        error = "Wrong source. Please use 'json' or 'csv'."
+        error = "Wrong source"
+
+    if not error and product_id:
+        filtered = [
+            p for p in product_list
+            if str(p.get("id", "")) == str(product_id)
+        ]
+        if not filtered:
+            error = "Product not found"
+            product_list = []
+        else:
+            product_list = filtered
 
     return render_template(
         "product_display.html", products=product_list, error=error
