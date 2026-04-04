@@ -8,31 +8,6 @@ import sqlite3
 app = Flask(__name__)
 
 
-def create_database():
-    """Create SQLite database and populate with sample data."""
-    conn = sqlite3.connect("products.db")
-    cursor = conn.cursor()
-    cursor.execute(
-        "CREATE TABLE IF NOT EXISTS Products ("
-        "id INTEGER PRIMARY KEY, "
-        "name TEXT NOT NULL, "
-        "category TEXT NOT NULL, "
-        "price REAL NOT NULL)"
-    )
-    cursor.execute("DELETE FROM Products")
-    cursor.execute(
-        "INSERT INTO Products VALUES (1, 'Laptop', 'Electronics', 799.99)"
-    )
-    cursor.execute(
-        "INSERT INTO Products VALUES (2, 'Coffee Mug', 'Kitchen', 15.99)"
-    )
-    cursor.execute(
-        "INSERT INTO Products VALUES (3, 'Desk Chair', 'Furniture', 249.99)"
-    )
-    conn.commit()
-    conn.close()
-
-
 @app.route("/")
 def home():
     """Render the home page."""
@@ -67,6 +42,7 @@ def items():
 def products():
     """Render products from JSON, CSV, or SQL based on query parameter."""
     source = request.args.get("source")
+    product_id = request.args.get("id")
     error = None
     product_list = []
 
@@ -86,18 +62,41 @@ def products():
     elif source == "sql":
         try:
             conn = sqlite3.connect("products.db")
+            conn.row_factory = sqlite3.Row
             cursor = conn.cursor()
-            cursor.execute("SELECT id, name, category, price FROM Products")
+            if product_id:
+                cursor.execute(
+                    "SELECT id, name, category, price FROM Products WHERE id = ?",
+                    (product_id,)
+                )
+            else:
+                cursor.execute(
+                    "SELECT id, name, category, price FROM Products"
+                )
             rows = cursor.fetchall()
             product_list = [
-                {"id": r[0], "name": r[1], "category": r[2], "price": r[3]}
+                {"id": r["id"], "name": r["name"],
+                 "category": r["category"], "price": r["price"]}
                 for r in rows
             ]
             conn.close()
+            if product_id and not product_list:
+                error = "Product not found"
         except sqlite3.Error:
             error = "Error reading SQLite database."
     else:
-        error = "Wrong source. Please use 'json', 'csv', or 'sql'."
+        error = "Wrong source"
+
+    if not error and product_id and source != "sql":
+        filtered = [
+            p for p in product_list
+            if str(p.get("id", "")) == str(product_id)
+        ]
+        if not filtered:
+            error = "Product not found"
+            product_list = []
+        else:
+            product_list = filtered
 
     return render_template(
         "product_display.html", products=product_list, error=error
@@ -105,5 +104,4 @@ def products():
 
 
 if __name__ == "__main__":
-    create_database()
     app.run(debug=True, port=5000)
